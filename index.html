@@ -1004,6 +1004,54 @@
         + 종목 추가
       </button>
     </div>
+
+    <hr class="divider">
+
+    <!-- APP INSTALL BUTTONS -->
+    <div style="padding: 8px 16px 16px;">
+      <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; color: var(--text3); text-transform: uppercase; margin-bottom: 8px;">앱 설치</div>
+
+      <!-- Android Install Button -->
+      <button id="androidInstallBtn" onclick="triggerAndroidInstall()" style="display:none; width:100%; background: var(--green-dim); border: 1px solid rgba(0,214,143,0.25); color: var(--green); border-radius: 6px; padding: 9px 8px; font-size: 11px; cursor: pointer; font-family: var(--sans); font-weight: 500; margin-bottom: 6px; transition: all 0.15s; text-align: left;">
+        <span style="font-size: 14px; margin-right: 6px;">🤖</span> Android 앱 설치
+      </button>
+
+      <!-- iOS Install Button -->
+      <button id="iosInstallBtn" onclick="showIOSGuide()" style="display:none; width:100%; background: var(--surface); border: 1px solid var(--border2); color: var(--text2); border-radius: 6px; padding: 9px 8px; font-size: 11px; cursor: pointer; font-family: var(--sans); font-weight: 500; margin-bottom: 6px; transition: all 0.15s; text-align: left;">
+        <span style="font-size: 14px; margin-right: 6px;">🍎</span> iPhone 앱 설치
+      </button>
+
+      <!-- Fallback: shown when neither detected -->
+      <div id="installFallback" style="font-size: 10px; color: var(--text3); line-height: 1.6;">
+        <div style="margin-bottom: 4px;">📱 <strong style="color: var(--text2);">Android</strong> — 크롬 메뉴 → 홈화면에 추가</div>
+        <div>🍎 <strong style="color: var(--text2);">iPhone</strong> — Safari 공유 → 홈화면에 추가</div>
+      </div>
+    </div>
+
+    <!-- iOS Guide Modal -->
+    <div id="iosModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999; align-items:flex-end; justify-content:center;">
+      <div style="background:var(--surface); border:1px solid var(--border2); border-radius:16px 16px 0 0; padding:24px 20px 32px; width:100%; max-width:400px;">
+        <div style="font-family:var(--display); font-size:15px; font-weight:600; color:var(--text); margin-bottom:16px;">iPhone 홈화면에 추가하기</div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; align-items:center; gap:12px; font-size:13px; color:var(--text2);">
+            <div style="width:28px; height:28px; background:var(--blue-dim); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--blue); font-size:12px; flex-shrink:0;">1</div>
+            <span>Safari 브라우저로 이 페이지를 열어주세요</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; font-size:13px; color:var(--text2);">
+            <div style="width:28px; height:28px; background:var(--blue-dim); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--blue); font-size:12px; flex-shrink:0;">2</div>
+            <span>하단 가운데 <strong style="color:var(--text);">공유 버튼 (□↑)</strong> 탭</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; font-size:13px; color:var(--text2);">
+            <div style="width:28px; height:28px; background:var(--blue-dim); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--blue); font-size:12px; flex-shrink:0;">3</div>
+            <span><strong style="color:var(--text);">"홈 화면에 추가"</strong> 선택 → 추가</span>
+          </div>
+        </div>
+        <button onclick="document.getElementById('iosModal').style.display='none'" style="margin-top:20px; width:100%; background:var(--accent); border:none; color:#000; border-radius:8px; padding:12px; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--sans);">
+          확인
+        </button>
+      </div>
+    </div>
+
   </aside>
 
   <!-- CENTER CONTENT -->
@@ -1567,6 +1615,46 @@ if ('serviceWorker' in navigator) {
       .catch(e => console.log('SW error:', e));
   });
 }
+
+// APP INSTALL DETECTION
+let deferredPrompt = null;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isAndroid = /android/i.test(navigator.userAgent);
+const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+function triggerAndroidInstall() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(result => {
+      if (result.outcome === 'accepted') {
+        document.getElementById('androidInstallBtn').textContent = '✓ 설치 완료!';
+        document.getElementById('androidInstallBtn').style.opacity = '0.5';
+      }
+      deferredPrompt = null;
+    });
+  }
+}
+
+function showIOSGuide() {
+  document.getElementById('iosModal').style.display = 'flex';
+}
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('androidInstallBtn').style.display = 'block';
+  document.getElementById('installFallback').style.display = 'none';
+});
+
+window.addEventListener('load', () => {
+  if (isInStandaloneMode) return;
+  if (isIOS) {
+    document.getElementById('iosInstallBtn').style.display = 'block';
+    document.getElementById('installFallback').style.display = 'none';
+  } else if (!isAndroid) {
+    document.getElementById('installFallback').style.display = 'block';
+  }
+});
 
 </script>
 </body>
